@@ -1,0 +1,23 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Share a post{% endblock %}
+
+{% block content %}
+    {% if sent %}
+        <h1>E-mail successfully sent</h1>
+        <p>"{{ post.title }}" was successfully sent to {{ form.cleaned_data.to }}.</p>
+{#        <a href="{% url "blog" post.id %}">return to </a>#}
+    {% else %}
+        <h1>Share "{{ post.title }}" by e-mail</h1>
+        <form action="." method="post">
+{# В html-элемент form добавили объект формы, дав Django указание сгенерировать ее поля #}
+          {# как HTML-элементы параграфа <p> с помощью метода as_p #}
+{# Еще можно отображать форму как ненумерованный список или HTML-таблицу с помощью методов as_ul или as_table соответственно.#}
+            {{ form.as_p }}
+            {% csrf_token %}
+{# По умолчанию Django проверяет CSRF-токен всех POST-запросов. Не забывайте добав #}
+{#            лять csrf_token тег во все формы, которые отправляются методом POST. #}
+            <input type="submit" value="Send e-mail">
+        </form>
+    {% endif %}
+{% endblock %}

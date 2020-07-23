@@ -1,0 +1,27 @@
+{% extends "blog/base.html" %}
+{% load blog_tags %}
+{% block title %}My Blog{% endblock %}
+{% block content %}
+    <h1>Blog</h1>
+    {% if tag %}
+        <h2>Posts tagged with "{{ tag.name }}"</h2>
+    {% endif %}
+    {% for post in posts %}
+        <h2>
+            <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+        </h2>
+        <p class="date">Published {{ post.publish }} by <b>{{ post.author }}</b></p>
+        <p class="tags">
+            Tags:
+            {% for tag in post.tags.all %}
+                <a href="{% url "blog:post_list_by_tag" tag.slug %}">
+                    {{ tag.name }}
+                </a>
+                {% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        {{ post.body|markdown|truncatewords_html:30 }} {# Фильтр truncatewords_html обрезает строку после указанного количества слов, не считая незакрытые HTML-теги #}
+    {% endfor %}
+    {% include "blog/pagination.html" with page=posts %}
+{#    {% include "blog/pagination.html" with page=page_obj %}#}
+{% endblock %}
