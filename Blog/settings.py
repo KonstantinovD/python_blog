@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'taggit',
     'django.contrib.sites',
     'django.contrib.sitemaps',
+    'django.contrib.postgres',
 ]
 # список подключенных промежуточных слоев
 MIDDLEWARE = [
@@ -87,8 +88,10 @@ WSGI_APPLICATION = 'Blog.wsgi.application'
 # данных. По умолчанию подключена СУБД SQLite3;
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'blog',
+        'USER': 'postgres',
+        'PASSWORD': 'katukov',
     }
 }
 

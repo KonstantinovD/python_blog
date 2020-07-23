@@ -5,10 +5,11 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
 from django.core.mail import send_mail
 from .models import Post, Comment
-from .forms import EmailPostForm, CommentForm
+from .forms import EmailPostForm, CommentForm, SearchForm
 from django.contrib import messages
 from taggit.models import Tag
 from django.db.models import Count  # функция агрегации Count из Django (еще есть Min, Max, Avg).
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 
 
 def post_list(request, tag_slug=None):
@@ -84,7 +85,7 @@ def create_comment(request, year, month, day, post):
             # messages.add_message(request, messages.SUCCESS, "HAHAHA") - spoiled
     return HttpResponseRedirect(request.path.replace('/comment', ''))
     # return redirect(request, 'blog/post/detail.html', new_comment=new_comment, comment_form=comment_form)
-        # post_detail(request, year, month, day, post, new_comment=new_comment, comment_form=comment_form)
+    # post_detail(request, year, month, day, post, new_comment=new_comment, comment_form=comment_form)
 
 
 # Аналог функции post_list
@@ -104,6 +105,7 @@ class PostListView(ListView):
     # использовать указанный шаблон для формирования страницы. Если бы мы не указали template_name,
     # то базовый класс ListView использовал бы шаблон blog/post_list.html.
     template_name = 'blog/post/list.html'
+
 
 def post_share(request, post_id):
     post = get_object_or_404(Post, id=post_id, status='published')
@@ -134,5 +136,38 @@ def post_share(request, post_id):
     return render(request, 'blog/post/share.html', {'post': post, 'form': form, 'sent': sent})
 
 
+def post_search(request):
+    form = SearchForm()
+    query = None
+    results = []
+    # Поисковый запрос отправляется методом GET, чтобы результирующий URL содержал в себе фразу поиска в параметре query
+    if 'query' in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data['query']
+            search_query = SearchQuery(query)
 
-# Create your views here.
+            if form.cleaned_data['look_at_header_first']:
+                # Мы можем повысить значимость некоторых векторов, чтобы совпадения по ним считались более релевантными,
+                # чем по остальным. Например, можно настроить поиск так, чтобы статьи с совпадениями в заголовке были
+                # в большем приоритете перед статьями с совпадениями в содержимом.
+                # Применяем векторы по полям title и body с разным весом. По умолчанию используются веса D, C, B и A,
+                # которые соответствуют числам 0.1, 0.2, 0.4 и 1. Мы применили вес 1.0 для вектора по полю title
+                # и 0.4 – для вектора по полю body. В конце показываем только те статьи, чей ранг выше 0.3.
+                search_vector = SearchVector('title', weight='A') + SearchVector('body', weight='B')
+                results = Post.objects.annotate(
+                    rank=SearchRank(search_vector, search_query)
+                ).filter(rank__gte=0.3).order_by('-rank')
+            else:
+                search_vector = SearchVector('title', 'body')
+                # В этом фрагменте мы создаем объект SearchQuery, фильтруем с его помощью
+                # результаты и используем SearchRank для ранжирования статей.
+                results = Post.objects.annotate(
+                    search=search_vector,
+                    rank=SearchRank(search_vector, search_query)
+                ).filter(search=query).order_by('-rank')
+    return render(request, 'blog/post/search.html', {'form': form, 'query': query, 'results': results})
+    # Еще одна возможность поиска – по сходству триграмм. Триграмма – это последовательность из трех символов.
+    # Вы можете измерить подобие двух строк, подсчитав количество совпадений триграмм. Такая метрика на практике
+    # является очень эффективной для определения подобия строк или слов во многих языках.
+    # Чтобы использовать триграммы в PostgerSQL, необходимо в postgres подключить расширение pg_trgm

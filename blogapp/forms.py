@@ -25,6 +25,11 @@ class CommentForm(forms.ModelForm):
         model = Comment
         fields = ('name', 'email', 'body')
 
+
+class SearchForm(forms.Form):
+    query = forms.CharField()
+    look_at_header_first = forms.BooleanField(required=False)
+
     # <END>
 
     # Мы определили максимальную
