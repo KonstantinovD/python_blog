@@ -147,7 +147,7 @@ def post_search(request):
             query = form.cleaned_data['query']
             search_query = SearchQuery(query)
 
-            if form.cleaned_data['look_at_header_first']:
+            if form.cleaned_data['header']:
                 # Мы можем повысить значимость некоторых векторов, чтобы совпадения по ним считались более релевантными,
                 # чем по остальным. Например, можно настроить поиск так, чтобы статьи с совпадениями в заголовке были
                 # в большем приоритете перед статьями с совпадениями в содержимом.

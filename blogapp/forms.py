@@ -28,7 +28,7 @@ class CommentForm(forms.ModelForm):
 
 class SearchForm(forms.Form):
     query = forms.CharField()
-    look_at_header_first = forms.BooleanField(required=False)
+    header = forms.BooleanField(required=False, label='Give priority to searching for words in titles')
 
     # <END>
 
